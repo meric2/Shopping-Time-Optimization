@@ -130,15 +130,15 @@ bread = Product("Bread", price=3)
 croissant = Product("Croissant", price=5)
 baguette = Product("Baguette", price=4)
 muffin = Product("Muffin", price=2)
-cake = Product("Cake", wait_time=5, price=20)
-pie = Product("Pie", wait_time=6, price=15)
+cake = Product("Cake", wait_time=15, price=20)
+pie = Product("Pie", wait_time=8, price=15)
 
 # Meat and Fish
-meat = Product("Meat", wait_time=8, price=50)
-fish = Product("Fish", wait_time=10, price=40)
-chicken = Product("Chicken", wait_time=7, price=25)
 sausage = Product("Sausage", price=20)
 bacon = Product("Bacon", price=22)
+meat = Product("Meat", wait_time=8, price=50)
+fish = Product("Fish", wait_time=10, price=40)
+chicken = Product("Chicken", wait_time=15, price=25)
 shrimp = Product("Shrimp", wait_time=6, price=35)
 
 # Beverages
@@ -160,15 +160,24 @@ rice = Product("Rice", price=5)
 cereal = Product("Cereal", price=8)
 honey = Product("Honey", price=12)
 
+# Delivery items
+cheese_delivery = Product("Cheese_delivery", wait_time=0, price=30)
+cake_delivery = Product("Cake_delivery", wait_time=0, price=20)
+pie_delivery = Product("Pie_delivery", wait_time=0, price=15)
+meat_delivery = Product("Meat_delivery", wait_time=0, price=50)
+fish_delivery = Product("Fish_delivery", wait_time=0, price=40)
+chicken_delivery = Product("Chicken_delivery", wait_time=0, price=25)
+shrimp_delivery = Product("Shrimp_delivery", wait_time=0, price=35)
+
 
 market_graph = Graph()
 
 # defining the aisles and adding the products
 entrance = Graph.Node(name="Entrance")
-bakery = Graph.Node("Bakery", [bread, croissant, baguette, muffin, cake, pie])
-meat_fish = Graph.Node("Meat and Fish", [meat, fish, chicken, sausage, bacon, shrimp])
+bakery = Graph.Node("Bakery", [bread, croissant, baguette, muffin, cake, pie, cake_delivery, pie_delivery])
+meat_fish = Graph.Node("Meat and Fish", [meat, fish, chicken, sausage, bacon, shrimp, meat_delivery, fish_delivery, chicken_delivery, shrimp_delivery])
 fruit_veg = Graph.Node("Fruits and Vegetables", [apple, banana, orange, grapes, strawberry, pear, kiwi, carrot, potato, tomato, lettuce, cucumber, peppers, onion, mushrooms])
-dairy = Graph.Node("Dairy", [milk, cheese, yoghurt, butter, cream, eggs])
+dairy = Graph.Node("Dairy", [milk, cheese, yoghurt, butter, cream, eggs, cheese_delivery])
 beverages = Graph.Node("Beverages", [orange_juice, coffee, tea, water, soda, beer, wine])
 snacks = Graph.Node("Snacks", [chocolate, chips, nuts, crackers, pasta, rice, cereal, honey])
 checkout = Graph.Node(name="Checkout")
@@ -203,10 +212,10 @@ market_graph.add_edge("Fruits and Vegetables", "Checkout")
 
 # creating a list for product locations
 product_aisle_map = {
-    bakery: [bread, croissant, baguette, muffin, cake, pie],
-    meat_fish: [meat, fish, chicken, sausage, bacon, shrimp],
+    bakery: [bread, croissant, baguette, muffin, cake, pie, cake_delivery, pie_delivery],
+    meat_fish: [meat, fish, chicken, sausage, bacon, shrimp, meat_delivery, fish_delivery, chicken_delivery, shrimp_delivery],
     fruit_veg: [apple, banana, orange, grapes, strawberry, pear, kiwi, carrot, potato, tomato, lettuce, cucumber, peppers, onion, mushrooms],
-    dairy: [milk, cheese, yoghurt, butter, cream, eggs],
+    dairy: [milk, cheese, yoghurt, butter, cream, eggs, cheese_delivery],
     beverages: [orange_juice, coffee, tea, water, soda, beer, wine],
     snacks: [chocolate, chips, nuts, crackers, pasta, rice, cereal, honey]
 }
@@ -218,7 +227,7 @@ def get_product_name(list_):
     return name_list
 
 class GeneticAlgorithm:
-    def __init__(self, product_list, product_aisle_map, market_graph, population_size=50, generations=100, mutation_rate=0.1, crossover_rate=0.8):
+    def __init__(self, product_list, product_aisle_map, market_graph, population_size=50, generations=100, mutation_rate=0, crossover_rate=0.8):
         self.product_list = sorted(product_list, key=lambda product: product.wait_time, reverse=True)# so that algorithm orders products with longer wait times first
         self.product_aisle_map = product_aisle_map
         self.market_graph = market_graph
@@ -241,26 +250,28 @@ class GeneticAlgorithm:
         items_picked = set()
         current_location = 'Entrance'
         due_time = {}
-
         for aisle in individual:
             # Add time to move to the next aisle
-            total_time += self.market_graph.get_time(current_location, aisle.getName())
+            total_time += self.market_graph.get_time(current_location, aisle.getName())#BFS
             current_location = aisle.getName()
-
+            
             # Check products in the current aisle
             for product in self.product_aisle_map[aisle]:
+                #print(product.name, total_time, product.wait_time)
                 if product in self.product_list and product not in items_picked:
+                    #print(product.name, total_time, product.wait_time)
                     if "delivery" in product.name:
+                        #print(product.name, total_time, product.wait_time)
                         # If it's a delivery item, pick it up if the order is ready
-                        if product.name[0:-9] in due_time and due_time[product.name[0:-9]] <= total_time:
+                        if product.name in due_time and due_time[product.name] <= total_time:
                             # do not pick up delivery item before it is ordered
                             items_picked.add(product)
                             total_time += 1
-                            items_picked.add(product)
-                    elif product.wait_time > 4:
+                            #items_picked.add(product)
+                    elif product.wait_time > 4:# chicken 15, cheese 6
                         # If the product has a long wait time, pick it up and order it (_delivery item)
                         total_time += 1
-                        due_time[product.name] = total_time + product.wait_time - 1
+                        due_time[product.name + "_delivery"] = total_time + product.wait_time - 1
                         items_picked.add(product)
                     else:
                         # For other products, add their wait time
@@ -323,19 +334,17 @@ class GeneticAlgorithm:
 
 
 start_time = datetime.datetime.now()
-shopping_list = [apple, cheese, chips, milk, chicken]  # Define the product list the user wants to buy
+shopping_list = [apple, cheese, chips, chicken]  # Define the product list the user wants to buy
 
 # Handling the user input
 for p in shopping_list:
     if p.wait_time > 4:
-        # Create a delivery product for 'p'
-        p_delivery = Product(f"{p.name} delivery", wait_time=0, price=0)
-        shopping_list.append(p_delivery)
-
+        delivery_item = f"{p.name}_delivery"
         for aisle, products in product_aisle_map.items():
-            if p in products:
-                aisle.items.append(p_delivery)
-                break
+            for curr_p in products:
+                if curr_p.name == delivery_item:
+                    shopping_list.append(curr_p)
+                    break
 
 ga = GeneticAlgorithm(
     product_list=shopping_list,

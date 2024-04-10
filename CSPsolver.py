@@ -7,7 +7,7 @@ products_data = pd.read_excel('MarketData.xlsx', sheet_name='Products')
 # Parameters
 products = {row['Products']: {'wait_time': row['Waiting Time'], 'price': row['Price'], 'aisle': row['Aisle']} for index, row in products_data.iterrows()}
 aisles = ['Entrance', 'Snacks', 'Beverages', 'Dairy', 'Meat and Fish', 'Fruits and Vegetables', 'Bakery', 'Checkout']
-shopping_list = ['apple', 'cheese', 'chips', 'cake', 'milk', 'chicken']
+shopping_list = ['apple', 'cheese', 'chips', 'chicken'] # user input
 
 # Handling user input
 delivery_products = []
@@ -31,14 +31,14 @@ total_time = 0
 
 # Connectivity of market layout
 connectivity = {
-    'Entrance': ['Snacks', 'Beverages', 'Dairy', 'Fruits and Vegetables'],
+    'Entrance': ['Dairy', 'Snacks', 'Beverages', 'Fruits and Vegetables'],
     'Snacks': ['Bakery', "Beverages", "Checkout"],
     'Beverages': ['Dairy', "Snacks", "Bakery", "Checkout"],
     'Dairy': ['Meat and Fish', 'Fruits and Vegetables', "Beverages", "Checkout"],
     'Meat and Fish': ['Bakery', "Dairy", "Fruits and Vegetables"],
     'Fruits and Vegetables': ['Meat and Fish', "Dairy", 'Checkout'],
     'Bakery': ["Beverages", "Snacks", 'Meat and Fish'],
-    'Checkout': ['Snacks', 'Beverages', 'Dairy', 'Fruits and Vegetables']
+    'Checkout': ['Dairy', 'Snacks', 'Beverages', 'Fruits and Vegetables']
 }
 
 # Objective: Minimize the total time to grab all products
@@ -62,7 +62,7 @@ due_time = []
 for product in shopping_list:
     aisle_for_product = products[product]['aisle']
     if products[product]['wait_time'] > 4:
-        model.addConstr(visit_vars[aisle_for_product] == 1, f"visit_{aisle_for_product}")
+        model.addConstr(visit_vars[aisle_for_product] == 1, f"visit_{aisle_for_product}")#order
         due_time.append(products[product]['wait_time']+total_time)
         total_time += 1
     else:
@@ -92,13 +92,12 @@ model.optimize()
 if model.status == GRB.OPTIMAL:
     runtime = model.Runtime
     objective_value = model.ObjVal
-    path = ['Entrance']#[aisle for aisle in aisles if visit_vars[aisle].X > 0.5]
+    path = ['Entrance']
     aisles_passed = 0
     for i in aisles:
         for j in aisles:
             if sequence_vars[i, j].X > 0.5:
                 aisles_passed += 1
-                #print(f"From {i} to {j}")
                 if path[-1] != i:
                     path.append(i)
                     path.append(j)
