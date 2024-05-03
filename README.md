@@ -16,7 +16,7 @@ An example market layout is integrated into code for GA, can be found in `Market
 ## Tech Stack
 
 **Language**: Python  
-**Technologies**: Gurobipy, NumPy, Pandas  
+**Technologies**: Gurobipy  
 
 ## Getting Started  
 
